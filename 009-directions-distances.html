@@ -7,21 +7,25 @@
 		#results	{width: 990px; height: 500px }
 		div#results #map_canvas		{ width: 65%; height: 100%; float: left; }
 		div#results #directions_panel	{ width: 35%; height: 100%; overflow: auto; float: right; }
-		input[type=text]{
+		select{
+        width: 189px;
+        border-radius: 5px;
+        padding: 10px;
+      }
+      input[type=text]{
             border-radius: 5px;
             height: 25px;
             padding: 0px;
       }
 	</style>
 	<script type="text/javascript" src="./jquery.min.js"></script>
-	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDTanm_xZQi4_RHeCAxerOqXN96NUwrbZU">
+	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDTanm_xZQi4_RHeCAxerOqXN96NUwrbZU&libraries=places">
 	</script>
     <!-- <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=true"></script> -->
 	<script type="text/javascript">
 	var map = null;
 	var directionsDisplay = null;
 	var directionsService = null;
-
 	function initialize() {
 	    var myLatlng = new google.maps.LatLng(20.68009, -101.35403);
 	    var myOptions = {
@@ -32,13 +36,17 @@
 	    map = new google.maps.Map($("#map_canvas").get(0), myOptions);
 		directionsDisplay = new google.maps.DirectionsRenderer();
 		directionsService = new google.maps.DirectionsService();
+		var input = document.getElementById('start');
+		var searchBox = new google.maps.places.SearchBox(input);
+		var input2 = document.getElementById('end');
+		var searchBox2 = new google.maps.places.SearchBox(input2);
 	}
 
 	function getDirections(){
 		var start = $('#start').val();
 		var end = $('#end').val();
 		if(!start || !end){
-			alert("Start and End addresses are required");
+			alert("Se requiere el origen y destino");
 			return;
 		}
 		var request = {
@@ -52,23 +60,54 @@
 	        if (status == google.maps.DirectionsStatus.OK) {
 	            directionsDisplay.setMap(map);
 	            directionsDisplay.setPanel($("#directions_panel").get(0));
+	            // console.log(response)
 	            directionsDisplay.setDirections(response);
 	            var summaryPanel = ($("#distance_panel").get(0));
 				summaryPanel.innerHTML = '';
+				var x = document.getElementById("rutaS");
+				$('#rutaS option').remove();
 	            for (var j = 0; j < response.routes.length; j++){
+				var option = document.createElement("option");
 	            	var route = response.routes[j];
-	            	console.log(response.routes[j]);
+	            	// console.log(response.routes[j]);
+	            	console.log(route)
 					var routeSegment = j + 1;
 					summaryPanel.innerHTML += '<b>Ruta ' + routeSegment + ': ';
 					summaryPanel.innerHTML += route.legs[0].distance.text;
+					option.text = route.legs[0].distance.text;
+					option.value =route.legs[0].distance.text.substring(0,(route.legs[0].distance.text.length - 2));
+					x.add(option);
 					summaryPanel.innerHTML += ' (' + route.legs[0].distance.value + 'm)<br><br>';
 	            }
 	        } else {
-	            alert("There is no directions available between these two points");
+	            alert("Porfavor coloque el origen y destine correctamente");
 	        }
 	    });
 	}
-
+	function c(){
+		var price = $('#type').val();
+		var km = $('#rutaS').val();
+		$('#costo').val('0');
+		if (price != "" && km != "") {
+          var nkm;
+          if (parseFloat(km)>3) {
+            nkm = parseInt(km) - 3;
+            var neto = nkm * 1.25;
+            document.getElementById('costo').value = parseFloat(price) + parseFloat(neto);
+          }else{
+            nkm = parseInt(km); // xd 3 km o menos
+            document.getElementById('costo').value = price;  
+          }
+        }else{
+        	console.log("elige ambos")
+        }
+	}
+	$('#type').live('change',function(){
+		c();
+	});
+	$('#rutaS').live('change',function(){
+		c();
+	});
 	$('#search').live('click', function(){ getDirections(); });
 	$('.routeOptions').live('change', function(){ getDirections(); });
 	
@@ -98,12 +137,30 @@
 		</p>
 		<p><button type="button" id="search" style="width: 200px; height: 30px;">Buscar rutas</button></p>
   	</div>
-	<div id="results" style="width: 990px; height: 500px;">
-		<div id="map_canvas" style="width: 65%; height: 100%; float: left;"></div>
+	<div id="results" style="width: 990px; height: 500px;display: inline-block;">
 		<div id="routes_panel" style="width: 35%; height: 100%; overflow: auto; float: right;">
-			<div id="distance_panel" style="width: 100%; height: 20%;"></div>
-			<div id="directions_panel" style="width: 100%; height: 80%;"></div>
+			<div id="distance_panel" style="width: 100%; height: 20%;display: none;"></div>
+			<div id="directions_panel" style="width: 100%; height: 100%;"></div>
 		</div>
+		<div id="map_canvas" style="width: 65%; height: 100%; float: left;"></div>
 	</div>
+	<div id="calculate" style="position: relative;float: right;width: 239px;right: 22px;top: -4px;padding: 20px;">
+			 <select id="rutaS">
+			 	<option value="">-- Seleccione Distancia --</option>
+			 </select>
+			 <!-- <br><br>
+	      		<label>Distancia :<br> <input type="text" id="distancia" value="0 km"></input></label> -->
+      			<br><br>
+		      <select id="type" name="type">
+		        <option value="">-- Tipo restaurante --</option>
+		        <option value="7">Afiliado Normal</option>
+		        <option value="8">Afiliado Vip</option>
+		        <option value="8">No Afiliado Normal</option>
+		        <option value="10">No Afiliado Vip</option>
+		      </select>
+		      <br><br>
+		      <label>Costo :<br> <input type="text" id="costo" value="0"></input></label>
+		      <br><br>
+			</div>
 </body>
 </html>
